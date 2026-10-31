@@ -1,0 +1,90 @@
+##2
+
+trigger PreventAccountDeletion on Account (before delete) {
+    Set<Id> accountIds = Trigger.oldMap.keySet();
+    List<Opportunity> openOpportunities = [
+        SELECT Id, AccountId, StageName
+        FROM Opportunity
+        WHERE AccountId IN :accountIds
+        AND StageName NOT IN ('Closed Won', 'Closed Lost')
+    ];
+    Set<Id> accountIdsWithOpenOpp = new Set<Id>();
+    for (Opportunity opp : openOpportunities) {
+        accountIdsWithOpenOpp.add(opp.AccountId);
+    }
+    for (Account acc : Trigger.old) {
+        if (accountIdsWithOpenOpp.contains(acc.Id)) {
+            acc.addError(
+                'Cannot delete this Account because it has Open Opportunities.'
+            );
+        }
+    }
+}
+
+
+#4 
+
+trigger AutoCreateContact on Account (after insert) {
+    List<Contact> contactList = new List<Contact>();
+    for (Account acc : Trigger.new) {
+        Contact con = new Contact();
+        con.FirstName = 'Default';
+        con.LastName = 'Contact';
+        con.AccountId = acc.Id;
+        contactList.add(con);
+    }
+    if (!contactList.isEmpty()) {
+        insert contactList;
+    }
+}
+
+
+#5
+i]
+public class UpdateContactMailingCity
+    implements Queueable {
+    private Map<Id, String> accountCityMap;
+    public UpdateContactMailingCity(
+        Map<Id, String> accountCityMap
+    ) {
+        this.accountCityMap = accountCityMap;
+    }
+    public void execute(QueueableContext context) {
+        List<Contact> contactList = [
+            SELECT Id, AccountId, MailingCity
+            FROM Contact
+            WHERE AccountId IN :accountCityMap.keySet()
+        ];
+        for (Contact con : contactList) {
+            con.MailingCity =
+                accountCityMap.get(con.AccountId);
+        }
+        if (!contactList.isEmpty()) {
+            update contactList;
+        }
+    }
+}
+
+
+ii]
+
+
+trigger AccountBillingCityTrigger on Account (after update) {
+    Map<Id, String> accountCityMap =
+        new Map<Id, String>();
+    for (Account acc : Trigger.new) {
+        Account oldAcc = Trigger.oldMap.get(acc.Id);
+        if (acc.BillingCity != oldAcc.BillingCity) {
+
+            accountCityMap.put(
+                acc.Id,
+                acc.BillingCity
+            );
+        }
+    }
+    if (!accountCityMap.isEmpty()) {
+        System.enqueueJob(
+            new UpdateContactMailingCity(accountCityMap)
+        );
+    }
+}
