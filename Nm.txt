@@ -1,4 +1,49 @@
+Developer Console 
+
+https://gcee7-dev-ed.develop.my.salesforce.com/_ui/common/apex/debug/ApexCSIPage
+
+SetUp Page
+
+https://gcee7-dev-ed.develop.my.salesforce-setup.com/lightning/setup/SetupOneHome/home
+
+
+
+##1
+
+1. Log in to Salesforce and click the Setup gear icon.
+2.    In Quick Find, search for Flows. Open Flows and click New Flow.
+3.    Select Record-Triggered Flow and click Create.
+4.    Select Opportunity as the Object.
+5.    Under Configure Trigger, select A record is updated.
+6.    Under Entry Conditions, set Field = Stage, Operator = Equals, and Value = Closed Won.
+7.    For When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements. This makes the Flow run only when Stage changes to Closed Won.
+8.    Under Optimize the Flow For, select Actions and Related Records, then click Done.
+9.    On the Flow canvas, click the plus (+) below Start and select Get Records.
+10.  Set Label = Get Related Account and Object = Account.
+11.  Set the Get Records condition: Field = Id, Operator = Equals, Value = $Record.AccountId.
+12.  Choose Only the first record to be stored and click Done.
+13.  Click the plus (+) after Get Records and select Decision.
+14.  Set Label = Check Account Found. Create an outcome named Account Found.
+15.  For the Account Found condition, select Get Related Account > Id, Operator = Is Null, Value = False. This checks that an Account was found.
+16.  Connect the Account Found outcome to an Update Records element. Leave the Default Outcome connected to End so Opportunities without an Account are skipped.
+17.  In Update Records, set Label = Update Account Type.
+18.  Choose Specify conditions to identify records, and set fields individually. Select Object = Account.
+19.  Set the condition: Field = Id, Operator = Equals, Value = Get Related Account > Id.
+20.  Under Set Field Values, set Field = Type and Value = Customer - Direct. Click Done.
+21.  Check the flow path: Start → Get Related Account → Check Account Found → (Account Found) Update Account Type → End. The Default Outcome should go directly to End.
+22.  Click Save. Enter Flow Label = Update Account Type When Opportunity Is Won, then click Save.
+23.  Click Activate to activate the Flow.
+
+
+
+
 ##2
+
+1. In Developer Console, click File → New → Apex Trigger.
+2. Enter the following details:
+Name: PreventAccountDeletion
+sObject: Account
+3. Click Submit.
 
 trigger PreventAccountDeletion on Account (before delete) {
     Set<Id> accountIds = Trigger.oldMap.keySet();
@@ -20,9 +65,30 @@ trigger PreventAccountDeletion on Account (before delete) {
         }
     }
 }
+4. Ctrl + S
+
+
+5. App Launcher - sales - account 
+6. create an Account named Test Company.
+7. Create a related Opportunity with Stage Prospecting.
+Try deleting the Account. Verify that deletion is blocked
+8. Create a related Opportunity named Test Won Opportunity.
+9. Set Stage to Closed Won.
+10. Save the Opportunity.
+Try deleting the Account.
+11. Change Opportunity Stage to Closed Lost.
+12. Enter the required Closed Reason.
+13. Save the Opportunity.
+Delete the Account. Verify successful deletion
 
 
 #4 
+
+1. Click File → New → Apex Trigger
+2. Enter the following details:
+Trigger Name: AutoCreateContact
+sObject: Account
+3. Click Submit.
 
 trigger AutoCreateContact on Account (after insert) {
     List<Contact> contactList = new List<Contact>();
@@ -38,9 +104,26 @@ trigger AutoCreateContact on Account (after insert) {
     }
 }
 
+4. App Launcher - sales - account - new
+5. Account Name : ABC Technologies
+6. Industry : Technology
+7. Save
+8. Open the newly created ABC Technologies Account.
+9. Click the Related tab.
+10. Find the Contacts section.
+(to verify that in the contact section is created automatically)
+
+
 
 #5
 i]
+
+1. Click File → New → Apex Class.
+2. Enter the class name:
+UpdateContactMailingCity
+Click OK.
+3. Submit 
+
 public class UpdateContactMailingCity
     implements Queueable {
     private Map<Id, String> accountCityMap;
@@ -64,10 +147,16 @@ public class UpdateContactMailingCity
         }
     }
 }
+4. Ctrl + S
 
 
 ii]
 
+1. Click File → New → Apex Trigger.
+2. Enter Trigger Name:
+AccountBillingCityTrigger
+Select sObject: Account.
+3. Click Submit.
 
 trigger AccountBillingCityTrigger on Account (after update) {
     Map<Id, String> accountCityMap =
@@ -88,3 +177,25 @@ trigger AccountBillingCityTrigger on Account (after update) {
         );
     }
 }
+4. Ctrl + S
+
+5. Open Sales → Accounts.
+6. Click New.
+7. Account Name : City Test Company
+8. Billing City : Chennai
+9. Save
+10. Open City Test Company.
+11. Click Related.
+12. Find Contacts.
+13. Click New.
+14. First Name : Tamil
+15. Last Name : Test 
+16. Account Name : City Test Company 
+17. Mailing City : Chennai
+18. Click Save
+19. Open City Test Company.
+20. Click Edit.
+21. Change Billing City from Chennai to Coimbatore.
+22. Click Save.
+
+
