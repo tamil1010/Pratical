@@ -11,31 +11,30 @@ https://gcee7-dev-ed.develop.my.salesforce-setup.com/lightning/setup/SetupOneHom
 ##1
 
 1. Log in to Salesforce and click the Setup gear icon.
-2.    In Quick Find, search for Flows. Open Flows and click New Flow.
-3.    Select Record-Triggered Flow and click Create.
-4.    Select Opportunity as the Object.
-5.    Under Configure Trigger, select A record is updated.
-6.    Under Entry Conditions, set Field = Stage, Operator = Equals, and Value = Closed Won.
-7.    For When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements. This makes the Flow run only when Stage changes to Closed Won.
-8.    Under Optimize the Flow For, select Actions and Related Records, then click Done.
-9.    On the Flow canvas, click the plus (+) below Start and select Get Records.
-10.  Set Label = Get Related Account and Object = Account.
-11.  Set the Get Records condition: Field = Id, Operator = Equals, Value = $Record.AccountId.
-12.  Choose Only the first record to be stored and click Done.
-13.  Click the plus (+) after Get Records and select Decision.
-14.  Set Label = Check Account Found. Create an outcome named Account Found.
-15.  For the Account Found condition, select Get Related Account > Id, Operator = Is Null, Value = False. This checks that an Account was found.
-16.  Connect the Account Found outcome to an Update Records element. Leave the Default Outcome connected to End so Opportunities without an Account are skipped.
-17.  In Update Records, set Label = Update Account Type.
-18.  Choose Specify conditions to identify records, and set fields individually. Select Object = Account.
-19.  Set the condition: Field = Id, Operator = Equals, Value = Get Related Account > Id.
-20.  Under Set Field Values, set Field = Type and Value = Customer - Direct. Click Done.
-21.  Check the flow path: Start → Get Related Account → Check Account Found → (Account Found) Update Account Type → End. The Default Outcome should go directly to End.
-22.  Click Save. Enter Flow Label = Update Account Type When Opportunity Is Won, then click Save.
-23.  Click Activate to activate the Flow.
+2. In Quick Find, search for Flows. Open Flows and click New Flow.
+3. Select Record-Triggered Flow and click Create.
+4. Select Opportunity as the Object.
+5. Under Configure Trigger, select A record is updated.
+6. Under Entry Conditions,select all condition set Field = Stage, Operator = Equals, and Value = Closed Won.
+7. For When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements. This makes the Flow run only when Stage changes to Closed Won.
+8. Under Optimize the Flow For, select Actions and Related Records, then click Done.
+9. On the Flow canvas, click the plus (+) below Start and select Get Records.
+10. Set Label = Get Related Account and Object = Account.
+11. Set the Get Records condition: Field = Id, Operator = Equals, Value = $Record.AccountId.
+12. Choose Only the first record to be stored and click Done.
+13. Click the plus (+) after Get Records and select Decision.
+14. Set Label = Check Account Found. Create an outcome named Account Found.
+15. For the Account Found condition, select Get Related Account > Id, Operator = Is Null, Value = False. This checks that an Account was found.
+16. Connect the Account Found outcome to an Update Records element. Leave the Default Outcome connected to End so Opportunities without an Account are skipped.
+17. In Update Records, set Label = Update Account Type.
+18. Choose Specify conditions to identify records, and set fields individually. Select Object = Account.
+19. Set the condition: Field = Id, Operator = Equals, Value = Get Related Account > Id.
+20. Under Set Field Values, set Field = Type and Value = Customer - Direct. Click Done.
+21. Check the flow path: Start → Get Related Account → Check Account Found → (Account Found) Update Account Type → End. The Default Outcome should go directly to End.
+22. Click Save. Enter Flow Label = Update Account Type When Opportunity Is Won, then click Save.
+23. Click Activate to activate the Flow.
 
-
-
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
 
 ##2
 
@@ -66,8 +65,6 @@ trigger PreventAccountDeletion on Account (before delete) {
     }
 }
 4. Ctrl + S
-
-
 5. App Launcher - sales - account 
 6. create an Account named Test Company.
 7. Create a related Opportunity with Stage Prospecting.
@@ -81,6 +78,76 @@ Try deleting the Account.
 13. Save the Opportunity.
 Delete the Account. Verify successful deletion
 
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+#3
+Step 1: Create New Flow
+        Log in to Salesforce.
+        Click the Setup (⚙️) icon.
+        Search for Flows in Quick Find.
+        Open Flows and click New Flow.
+        Select Record-Triggered Flow.
+        Click Create.
+Step 2: Configure Start
+        Select Object – Opportunity.
+        Select Trigger – A record is updated.
+        Set Entry Conditions:
+                Field – Stage
+                Operator – Equals
+                Value – Closed Won
+        Under When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements.
+        Under Optimize the Flow For, select Actions and Related Records.
+        Close the Configure Start panel.
+Step 3: Add Get Records
+        Click the (+) below the Start element.
+        Select Get Records.
+        Enter Label – Get Related Account.
+        Select Object – Account.
+        Set the Condition:
+                Field – Account ID
+                Operator – Equals
+                Value – Triggering Opportunity → Account ID ($Record.AccountId)
+        Under How Many Records to Store, select Only the first record.
+        Click Done or close the configuration panel.
+Step 4: Add Decision
+        Click the (+) below Get Related Account.
+        Select Decision.
+        Enter Label – Check Account Found.
+        Enter Outcome Label – Account Found.
+        Set the Condition:
+                Resource – Get Related Account → Account ID
+                Operator – Is Null
+                Value – False
+        Keep the Default Outcome unchanged.
+        Close the configuration panel.
+Step 5: Add Update Records
+        Click the (+) below the Account Found path.
+        Select Update Records.
+        Enter Label – Update Account Type.
+        Select Specify conditions to identify records, and set fields individually.
+        Select Object – Account.
+        Set the Condition:
+                Field – Account ID
+                Operator – Equals
+                Value – Get Related Account → Account ID
+        Under Set Field Values:
+                Field – Type
+                Value – Customer - Direct
+        Click Done or close the configuration panel.
+Step 6: Check Flow Connections
+        Make sure the Flow is connected in this order:
+                Start
+                Get Related Account
+                Check Account Found
+                Account Found → Update Account Type → End
+                Default Outcome → End
+Step 7: Save and Activate
+Click Save.
+Enter Flow Label – Update Account Type When Opportunity Is Won.
+Click Save.
+Click Activate.
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
 
 #4 
 
@@ -113,9 +180,10 @@ trigger AutoCreateContact on Account (after insert) {
 10. Find the Contacts section.
 (to verify that in the contact section is created automatically)
 
-
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
 
 #5
+
 i]
 
 1. Click File → New → Apex Class.
@@ -198,4 +266,98 @@ trigger AccountBillingCityTrigger on Account (after update) {
 21. Change Billing City from Chennai to Coimbatore.
 22. Click Save.
 
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
 
+#6
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+#7
+
+1. Click File → New → Apex Trigger.
+2. Enter the following details:
+        Trigger Name: PreventDuplicateContacts
+        sObject: Contact
+3. Submit
+
+trigger PreventDuplicateContacts on Contact (before insert) {
+    Set<String> emails = new Set<String>();
+    Set<String> phones = new Set<String>();
+    for (Contact con : Trigger.new) {
+        if (con.Email != null) {
+            emails.add(con.Email.trim().toLowerCase());
+        }
+        if (con.Phone != null) {
+            phones.add(con.Phone.trim());
+        }
+    }
+    List<Contact> existingContacts = [
+        SELECT Id, Email, Phone
+        FROM Contact
+        WHERE Email IN :emails
+        OR Phone IN :phones
+    ];
+    Set<String> existingEmails = new Set<String>();
+    Set<String> existingPhones = new Set<String>();
+    for (Contact con : existingContacts) {
+        if (con.Email != null) {
+            existingEmails.add(con.Email.trim().toLowerCase());
+        }
+        if (con.Phone != null) {
+            existingPhones.add(con.Phone.trim());
+        }
+    }
+    Set<String> seenEmails = new Set<String>();
+    Set<String> seenPhones = new Set<String>();
+    for (Contact con : Trigger.new) {
+        Boolean duplicateFound = false;
+        if (con.Email != null) {
+            String email = con.Email.trim().toLowerCase();
+            if (existingEmails.contains(email) ||
+                seenEmails.contains(email)) {
+                duplicateFound = true;
+            }
+            seenEmails.add(email);
+        }
+        if (con.Phone != null) {
+            String phone = con.Phone.trim();
+            if (existingPhones.contains(phone) ||
+                seenPhones.contains(phone)) {
+                duplicateFound = true;
+            }
+            seenPhones.add(phone);
+        }
+        if (duplicateFound) {
+            con.addError(
+                'Duplicate Contact! Email or Phone already exists.'
+            );
+        }
+    }
+}
+Step 1: Create the first Contact
+        Return to Salesforce.
+        Open Sales → Contacts.
+        Click New.
+        Enter:
+            First Name : Tamil
+            Last Name : Kumar
+            Email : tamiltest@gmail.com
+            phone : 9876543210
+
+        Click Save.(Expected: Contact created successfully)
+Step 2: Test duplicate Email
+        Click New again.
+        Enter:
+            First Name : Tamil
+            Last Name : User
+            Email : tamiltest@gmail.com
+            phone : 9876543211
+        Click Save.(Expectedz: Duplicate Contact error)
+Step 3: Test duplicate Phone
+        Click New.
+        Enter:
+            First Name : Test
+            Last Name : Person
+            Email : another@gmail.com
+            phone : 9876543210
+        Click Save.(Expected: Duplicate Contact error)
