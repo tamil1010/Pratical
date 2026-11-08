@@ -361,3 +361,204 @@ Step 3: Test duplicate Phone
             Email : another@gmail.com
             phone : 9876543210
         Click Save.(Expected: Duplicate Contact error)
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+# 12
+
+Step 1: Create the Role & SalesManager User
+1. Create the "Sales Manager" Role (if not already present)
+        Go to Setup  in the Quick Find box, enter Roles.
+        Click Set Up Roles.
+        Under your company hierarchy, click Add Role.
+        Set Role Name and Label to Sales Manager.
+        Click Save.
+2. Create the "SalesManager" User
+        In Setup, enter Users in the Quick Find box and select Users.
+        Click New User.
+        Enter the following details:
+                First Name: Sales
+                Last Name: Manager
+                Alias: smanager
+                Email: Enter your valid email address (so you receive the summary email during testing).
+                Username: e.g., salesmanager.<your_unique_id>@exam.nm (must be unique).
+                User License: Salesforce
+                Profile: Standard User
+                Role: Sales Manager
+        Check Generate new password and notify user immediately.
+        Click Save.
+Step 2: Write the Batch and Schedulable Apex Class
+
+Click the Developer Console -> File -> New -> Apex Class.
+Name the class : DailyOpportunitySummaryBatch.
+
+global class DailyOpportunitySummaryBatch implements Database.Batchable<sObject>, Database.Stateful, Schedulable {
+    global List<String> oppSummaryList = new List<String>();
+    global Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator([
+            SELECT Id, Name, StageName, Amount, CloseDate, CreatedDate, Owner.Name 
+            FROM Opportunity 
+            WHERE CreatedDate = TODAY
+        ]);
+    }
+    global void execute(Database.BatchableContext bc, List<Opportunity> scope) {
+        for (Opportunity opp : scope) {
+            String recordSummary = 'Opportunity: ' + opp.Name + 
+                                   ' | Stage: ' + opp.StageName + 
+                                   ' | Amount: ' + (opp.Amount != null ? String.valueOf(opp.Amount) : '0') + 
+                                   ' | Owner: ' + opp.Owner.Name + 
+                                   ' | Close Date: ' + opp.CloseDate.format();
+            oppSummaryList.add(recordSummary);
+        }
+    }
+    global void finish(Database.BatchableContext bc) {
+        List<User> managers = [
+            SELECT Id, Email, Name 
+            FROM User 
+            WHERE UserRole.Name = 'Sales Manager' 
+            AND Profile.Name = 'Standard User' 
+            AND IsActive = true 
+            LIMIT 1
+        ];
+        if (!managers.isEmpty() && managers[0].Email != null) {
+            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+            mail.setToAddresses(new String[] { managers[0].Email });
+            mail.setSubject('Daily Opportunity Summary Report - ' + Date.today().format());
+            String emailBody = 'Hello ' + managers[0].Name + ',\n\n';
+            emailBody += 'Here is the summary of Opportunities created today (' + Date.today().format() + '):\n\n';
+            if (oppSummaryList.isEmpty()) {
+                emailBody += 'No opportunities were created today.\n';
+            } else {
+                emailBody += 'Total Created Today: ' + oppSummaryList.size() + '\n\n';
+                for (String detail : oppSummaryList) {
+                    emailBody += '• ' + detail + '\n';
+                }
+            }
+            emailBody += '\nRegards,\nSalesforce Automated Scheduler';
+            mail.setPlainTextBody(emailBody);
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        }
+    }
+    global void execute(SchedulableContext sc) {
+        DailyOpportunitySummaryBatch batchJob = new DailyOpportunitySummaryBatch();
+        Database.executeBatch(batchJob, 200);
+    }
+}
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+
+# 13
+
+Developer Console → File → New → Apex Class
+Name: OpportunitySharingHelper
+
+public class OpportunitySharingHelper {
+    public static void shareRecords(List<Opportunity> opps) {
+        Set<Id> accIds = new Set<Id>();
+        for (Opportunity o : opps)
+            if (o.AccountId != null) accIds.add(o.AccountId);
+        List<OpportunityShare> shares = new List<OpportunityShare>();
+        for (AccountTeamMember m : [
+            SELECT AccountId, UserId, OpportunityAccessLevel
+            FROM AccountTeamMember
+            WHERE AccountId IN :accIds
+        ]) {
+            for (Opportunity o : opps) {
+                if (o.AccountId == m.AccountId &&
+                    m.OpportunityAccessLevel != 'None' &&
+                    o.OwnerId != m.UserId) {
+                    shares.add(new OpportunityShare(
+                        OpportunityId = o.Id,
+                        UserOrGroupId = m.UserId,
+                        OpportunityAccessLevel = m.OpportunityAccessLevel,
+                        RowCause = Schema.OpportunityShare.RowCause.Manual
+                    ));
+                }
+            }
+        }
+        if (!shares.isEmpty())
+            Database.insert(shares, false);
+    }
+}
+Ctrl + S
+File → New → Apex Trigger.
+Name: OpportunityTeamSharingTrigger
+sObject: Opportunity
+
+trigger OpportunityTeamSharingTrigger
+on Opportunity (after insert) {
+
+    OpportunitySharingHelper.shareRecords(Trigger.new);
+}
+Ctrl + S
+
+___________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+# 15
+
+1. Open Salesforce Developer Console.
+2. Click File → New → Apex Class.
+3. Enter class name:
+        LeadSourceController
+4. Click OK.
+
+public with sharing class LeadSourceController {
+    public class LeadSourceData {
+        @AuraEnabled
+        public String leadSource;
+        @AuraEnabled
+        public Integer leadCount;
+        public LeadSourceData(String source, Integer count) {
+            leadSource = source;
+            leadCount = count;
+        }
+    }
+    @AuraEnabled(cacheable=true)
+    public static List<LeadSourceData> getOpenLeadsBySource() {
+        List<LeadSourceData> results =
+            new List<LeadSourceData>();
+        List<AggregateResult> groupedLeads = [
+            SELECT LeadSource, COUNT(Id) total
+            FROM Lead
+            WHERE IsConverted = false
+            AND Status != 'Closed - Not Converted'
+            GROUP BY LeadSource
+        ];
+        for (AggregateResult ar : groupedLeads) {
+            String source = (String) ar.get('LeadSource');
+            if (String.isBlank(source)) {
+                source = 'Other';
+            }
+            Integer count = (Integer) ar.get('total');
+            results.add(new LeadSourceData(source, count));
+        }
+        return results;
+    }
+}
+5. Ctrl + S
+
+
+Step 1: Create a Report
+        1. Open Salesforce.
+        2. Click the App Launcher (9 dots).
+        3. Open Sales.
+        4. Click the Reports tab.
+        5. Click New Report.
+        6. Search for and select Leads.
+        7. Click Start Report.
+Step 2: Filter Open Leads
+    In the Filters panel:
+        1. Select Show Me → All Leads.
+        2. Keep Date as Create Date.
+        3. Keep Range as All Time.
+        6. Click Apply.
+Step 3: Group by Lead Source
+        1. Open the Outline panel.
+        2. Find Group Rows.
+        3. Click Add Group.
+        4. Select Lead Source.
+        5. Click Save and Run.
+        6. Click Edit.
+        7. After run button see below gear icon click that>
+        8. click Donut and save & Run.
