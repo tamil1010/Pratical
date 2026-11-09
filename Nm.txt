@@ -88,72 +88,42 @@ Delete the Account. Verify successful deletion
 
 ___________________________________________________________________________________________________________________________________
 
-#3
-Step 1: Create New Flow
-        Log in to Salesforce.
-        Click the Setup (⚙️) icon.
-        Search for Flows in Quick Find.
-        Open Flows and click New Flow.
-        Select Record-Triggered Flow.
-        Click Create.
-Step 2: Configure Start
-        Select Object – Opportunity.
-        Select Trigger – A record is updated.
-        Set Entry Conditions:
-                Field – Stage
-                Operator – Equals
-                Value – Closed Won
-        Under When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements.
-        Under Optimize the Flow For, select Actions and Related Records.
-        Close the Configure Start panel.
-Step 3: Add Get Records
-        Click the (+) below the Start element.
-        Select Get Records.
-        Enter Label – Get Related Account.
-        Select Object – Account.
-        Set the Condition:
-                Field – Account ID
-                Operator – Equals
-                Value – Triggering Opportunity → Account ID ($Record.AccountId)
-        Under How Many Records to Store, select Only the first record.
-        Click Done or close the configuration panel.
-Step 4: Add Decision
-        Click the (+) below Get Related Account.
-        Select Decision.
-        Enter Label – Check Account Found.
-        Enter Outcome Label – Account Found.
-        Set the Condition:
-                Resource – Get Related Account → Account ID
-                Operator – Is Null
-                Value – False
-        Keep the Default Outcome unchanged.
-        Close the configuration panel.
-Step 5: Add Update Records
-        Click the (+) below the Account Found path.
-        Select Update Records.
-        Enter Label – Update Account Type.
-        Select Specify conditions to identify records, and set fields individually.
-        Select Object – Account.
-        Set the Condition:
-                Field – Account ID
-                Operator – Equals
-                Value – Get Related Account → Account ID
-        Under Set Field Values:
-                Field – Type
-                Value – Customer - Direct
-        Click Done or close the configuration panel.
-Step 6: Check Flow Connections
-        Make sure the Flow is connected in this order:
-                Start
-                Get Related Account
-                Check Account Found
-                Account Found → Update Account Type → End
-                Default Outcome → End
-Step 7: Save and Activate
-Click Save.
-Enter Flow Label – Update Account Type When Opportunity Is Won.
-Click Save.
-Click Activate.
+# 3
+
+1. Go to Setup → Flows.
+2. Click New Flow.
+3. Select Record-Triggered Flow.
+4. Click Create.
+5. Set the following:
+        Field	                Value
+        Object	                Opportunity
+        Trigger	                A record is updated
+        Condition Requirements	All Conditions Are Met
+        Field	                StageName
+        Operator	        Equals
+        Value	                Closed Won
+        When to Run	        Only when a record is updated to meet the condition requirements
+        Optimize For        	Actions and Related Records
+
+
+
+1. Click the + icon.
+2. Select Update Records.
+3. Label: Update Account Type.
+4. Select Specify conditions to identify records, and set fields individually.
+5. Object: Account.
+6. 
+Field	        Operator	Value
+Account ID	Equals	        Triggering Opportunity → Account ID
+7. 
+Field	        Value
+Account Type	Customer - Direct
+
+
+1. Click Save.
+2. Flow Label: Update Account Type on Closed Won.
+3. Click Save.
+4. Click Activate.
 
 ___________________________________________________________________________________________________________________________________
 
