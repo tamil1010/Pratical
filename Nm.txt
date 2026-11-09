@@ -362,6 +362,60 @@ Step 3: Test duplicate Phone
             phone : 9876543210
         Click Save.(Expected: Duplicate Contact error)
 
+
+___________________________________________________________________________________________________________________________________
+
+# 10
+
+1. Go to Setup → Users.
+2. Click New User.
+3. 
+    Field	        What to enter
+    First Name	    Sales
+    Last Name	    Manager
+    Alias	        smanager
+    Email        	Your valid email address
+    Username	    salesmanager.unique2026@example.com
+
+    User License	Salesforce
+    Profile         Standard User
+4. Click Save.
+
+1. Go to Setup → Object Manager.
+2. Select Opportunity.
+3. Click Fields & Relationships → New.
+4. Select Percent as the data type.
+5. Click Next.
+6. Enter:
+           Field Label: Discount Percentage
+           Length: 3
+           Decimal Places: 2
+7. Click Next.
+8.
+            Standard User: Uncheck Visible.
+            Sales Manager: Ensure Visible is checked if this profile exists.
+9. Click Next → Save.
+10. Go to Setup → Permission Sets.
+11. Click New.
+12. Enter:
+           Label: Discount Manager Access
+           API Name: Discount_Manager_Access
+           License: None
+13. Click Save.
+14. Open Discount Manager Access.
+15. Click Object Settings → Opportunities.
+16. Click Edit.
+17. Find Discount Percentage under Field Permissions.
+18. Enable:
+           Read Access
+           Edit Access
+19. Click Save.
+20. Open Discount Manager Access.
+21. Click Manage Assignments.
+22. Click Add Assignments.
+23. Select the Sales Manager user.
+24. Click Next → Assign → Done.
+
 ___________________________________________________________________________________________________________________________________
 
 # 11
@@ -523,6 +577,108 @@ on Opportunity (after insert) {
     OpportunitySharingHelper.shareRecords(Trigger.new);
 }
 Ctrl + S
+
+___________________________________________________________________________________________________________________________________
+
+# 14
+
+1. Go to Setup → Object Manager.
+2. Click Create → Custom Object.
+3. Enter the following details:
+        Field	            Value
+        Label	            Product Inventory
+        Plural Label	    Product Inventories
+        Object Name	        Product_Inventory
+        Record Name	        Inventory Name
+        Data Type	        Text
+4. Click Save.
+5. Click Fields & Relationships.
+6. Click New.
+7. Select Number → Next.
+8. Enter:
+       Field Label: Available Quantity
+       Length: 18
+       Decimal Places: 0
+9. Click Next → Next → Save.
+10. Create Location
+11. Click New again.
+12. Select Text → Next.
+13. Enter:
+       Field Label: Location
+       Length: 100
+14. Click Next → Next → Save.
+
+
+1. Go to Setup → Object Manager.
+2. Click Create → Custom Object.
+3. Enter these details:
+        Field	        Value
+        Label	        Order Item
+        Plural Label	Order Items
+        Object Name	    Order_Item
+        Record Name	    Order Item Name
+        Data Type	    Text
+4. Click Save.
+5. Open Order Item → Fields & Relationships → New.
+6. 
+Data Type: Number
+Field Label: Quantity
+Decimal Places: 0
+Click Next → Next → Save.
+
+Data Type: Lookup Relationship
+Related To: Product Inventory
+Field Label: Product Inventory
+Click Next → Next → Save.
+7. Open Gear Icon → Developer Console.
+8. Click File → New → Apex Trigger.
+9. Enter:
+        Trigger Name: InventoryUpdateTrigger
+        sObject: Order_Item__c
+10. Click Submit.
+
+trigger InventoryUpdateTrigger on Order_Item__c (after insert, after delete) {
+
+    Map<Id, Decimal> quantities = new Map<Id, Decimal>();
+
+    if (Trigger.isInsert) {
+        for (Order_Item__c item : Trigger.new) {
+            quantities.put(
+                item.Product_Inventory__c,
+                (quantities.containsKey(item.Product_Inventory__c)
+                    ? quantities.get(item.Product_Inventory__c) : 0)
+                - item.Quantity__c
+            );
+        }
+    }
+
+    if (Trigger.isDelete) {
+        for (Order_Item__c item : Trigger.old) {
+            quantities.put(
+                item.Product_Inventory__c,
+                (quantities.containsKey(item.Product_Inventory__c)
+                    ? quantities.get(item.Product_Inventory__c) : 0)
+                + item.Quantity__c
+            );
+        }
+    }
+
+    List<Product_Inventory__c> stocks = [
+        SELECT Id, Available_Quantity__c
+        FROM Product_Inventory__c
+        WHERE Id IN :quantities.keySet()
+    ];
+
+    for (Product_Inventory__c stock : stocks) {
+        stock.Available_Quantity__c =
+            stock.Available_Quantity__c + quantities.get(stock.Id);
+    }
+
+    update stocks;
+}
+
+Ctrl + S
+
 
 ___________________________________________________________________________________________________________________________________
 
