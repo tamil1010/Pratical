@@ -184,87 +184,103 @@ ________________________________________________________________________________
 
 #5
 
-i]
+1. Open Salesforce.
+2. Click Gear Icon → Developer Console.
+3. Select File → New → Apex Class.
+4. Enter the class name:
+        UpdateContactMailingCity
 
-1. Click File → New → Apex Class.
-2. Enter the class name:
-UpdateContactMailingCity
-Click OK.
-3. Submit 
+public class UpdateContactMailingCity implements Queueable {
 
-public class UpdateContactMailingCity
-    implements Queueable {
-    private Map<Id, String> accountCityMap;
-    public UpdateContactMailingCity(
-        Map<Id, String> accountCityMap
-    ) {
-        this.accountCityMap = accountCityMap;
+    private Set<Id> accountIds;
+
+    public UpdateContactMailingCity(Set<Id> ids) {
+        accountIds = ids;
     }
+
     public void execute(QueueableContext context) {
-        List<Contact> contactList = [
-            SELECT Id, AccountId, MailingCity
+
+        List<Contact> contacts = [
+            SELECT Id, MailingCity, Account.BillingCity
             FROM Contact
-            WHERE AccountId IN :accountCityMap.keySet()
+            WHERE AccountId IN :accountIds
         ];
-        for (Contact con : contactList) {
-            con.MailingCity =
-                accountCityMap.get(con.AccountId);
+
+        for (Contact c : contacts) {
+            c.MailingCity = c.Account.BillingCity;
         }
-        if (!contactList.isEmpty()) {
-            update contactList;
+
+        if (!contacts.isEmpty()) {
+            update contacts;
         }
     }
 }
-4. Ctrl + S
+5. Ctrl + S
+6. In Developer Console, click File → New → Apex Trigger.
+7. Enter:
+        Trigger Name: AccountBillingCityTrigger
+        sObject: Account
+8. Click Submit.
 
-
-ii]
-
-1. Click File → New → Apex Trigger.
-2. Enter Trigger Name:
-AccountBillingCityTrigger
-Select sObject: Account.
-3. Click Submit.
 
 trigger AccountBillingCityTrigger on Account (after update) {
-    Map<Id, String> accountCityMap =
-        new Map<Id, String>();
-    for (Account acc : Trigger.new) {
-        Account oldAcc = Trigger.oldMap.get(acc.Id);
-        if (acc.BillingCity != oldAcc.BillingCity) {
 
-            accountCityMap.put(
-                acc.Id,
-                acc.BillingCity
-            );
+    Set<Id> accountIds = new Set<Id>();
+
+    for (Account acc : Trigger.new) {
+
+        Account oldAcc = Trigger.oldMap.get(acc.Id);
+
+        if (acc.BillingCity != oldAcc.BillingCity) {
+            accountIds.add(acc.Id);
         }
     }
-    if (!accountCityMap.isEmpty()) {
+
+    if (!accountIds.isEmpty()) {
         System.enqueueJob(
-            new UpdateContactMailingCity(accountCityMap)
+            new UpdateContactMailingCity(accountIds)
         );
     }
 }
-4. Ctrl + S
+9. Ctrl + S
+10. In Developer Console, click Debug -> Open Execute Anonymous Window
+11. 
+Account acc = new Account(
+    Name = 'ABC Technologies',
+    BillingCity = 'Chennai'
+);
+insert acc;
 
-5. Open Sales → Accounts.
-6. Click New.
-7. Account Name : City Test Company
-8. Billing City : Chennai
-9. Save
-10. Open City Test Company.
-11. Click Related.
-12. Find Contacts.
-13. Click New.
-14. First Name : Tamil
-15. Last Name : Test 
-16. Account Name : City Test Company 
-17. Mailing City : Chennai
-18. Click Save
-19. Open City Test Company.
-20. Click Edit.
-21. Change Billing City from Chennai to Coimbatore.
-22. Click Save.
+Contact con = new Contact(
+    FirstName = 'Test',
+    LastName = 'Contact',
+    AccountId = acc.Id,
+    MailingCity = 'Coimbatore'
+);
+insert con;
+
+acc.BillingCity = 'Erode';
+update acc;
+
+System.debug('Account Billing City Updated');
+
+12. Click execute. 
+
+
+Contact con = [
+    SELECT Name, MailingCity
+    FROM Contact
+    WHERE LastName = 'Contact'
+    ORDER BY CreatedDate DESC
+    LIMIT 1
+];
+
+System.debug('Contact Name: ' + con.Name);
+System.debug('Updated Mailing City: ' + con.MailingCity);
+
+
+13. again exceute
+14. Go to Setup -> Apex Jobs -> Queueable job.(you can see this)
 
 ___________________________________________________________________________________________________________________________________
 
@@ -281,86 +297,60 @@ ________________________________________________________________________________
 3. Submit
 
 trigger PreventDuplicateContacts on Contact (before insert) {
+
     Set<String> emails = new Set<String>();
     Set<String> phones = new Set<String>();
-    for (Contact con : Trigger.new) {
-        if (con.Email != null) {
-            emails.add(con.Email.trim().toLowerCase());
-        }
-        if (con.Phone != null) {
-            phones.add(con.Phone.trim());
-        }
+
+    for (Contact c : Trigger.new) {
+        if (c.Email != null) emails.add(c.Email.toLowerCase());
+        if (c.Phone != null) phones.add(c.Phone);
     }
+
     List<Contact> existingContacts = [
-        SELECT Id, Email, Phone
+        SELECT Email, Phone
         FROM Contact
-        WHERE Email IN :emails
-        OR Phone IN :phones
+        WHERE Email IN :emails OR Phone IN :phones
     ];
+
     Set<String> existingEmails = new Set<String>();
     Set<String> existingPhones = new Set<String>();
-    for (Contact con : existingContacts) {
-        if (con.Email != null) {
-            existingEmails.add(con.Email.trim().toLowerCase());
-        }
-        if (con.Phone != null) {
-            existingPhones.add(con.Phone.trim());
-        }
+
+    for (Contact c : existingContacts) {
+        if (c.Email != null) existingEmails.add(c.Email.toLowerCase());
+        if (c.Phone != null) existingPhones.add(c.Phone);
     }
-    Set<String> seenEmails = new Set<String>();
-    Set<String> seenPhones = new Set<String>();
-    for (Contact con : Trigger.new) {
-        Boolean duplicateFound = false;
-        if (con.Email != null) {
-            String email = con.Email.trim().toLowerCase();
-            if (existingEmails.contains(email) ||
-                seenEmails.contains(email)) {
-                duplicateFound = true;
-            }
-            seenEmails.add(email);
+
+    for (Contact c : Trigger.new) {
+        if (c.Email != null && existingEmails.contains(c.Email.toLowerCase())) {
+            c.addError('Duplicate Contact Email!');
         }
-        if (con.Phone != null) {
-            String phone = con.Phone.trim();
-            if (existingPhones.contains(phone) ||
-                seenPhones.contains(phone)) {
-                duplicateFound = true;
-            }
-            seenPhones.add(phone);
-        }
-        if (duplicateFound) {
-            con.addError(
-                'Duplicate Contact! Email or Phone already exists.'
-            );
+
+        if (c.Phone != null && existingPhones.contains(c.Phone)) {
+            c.addError('Duplicate Contact Phone!');
         }
     }
 }
-Step 1: Create the first Contact
-        Return to Salesforce.
-        Open Sales → Contacts.
-        Click New.
-        Enter:
-            First Name : Tamil
-            Last Name : Kumar
-            Email : tamiltest@gmail.com
-            phone : 9876543210
+4. Ctrl + S
+5. Open Developer Console → Debug → Open Execute Anonymous Window.
+6. Enter:
+Contact c = new Contact(
+    LastName = 'Test Contact',
+    Email = 'test@gmail.com',
+    Phone = '9876543210'
+);
+insert c;
+7. Execute...Successfull execution
 
-        Click Save.(Expected: Contact created successfully)
-Step 2: Test duplicate Email
-        Click New again.
-        Enter:
-            First Name : Tamil
-            Last Name : User
-            Email : tamiltest@gmail.com
-            phone : 9876543211
-        Click Save.(Expectedz: Duplicate Contact error)
-Step 3: Test duplicate Phone
-        Click New.
-        Enter:
-            First Name : Test
-            Last Name : Person
-            Email : another@gmail.com
-            phone : 9876543210
-        Click Save.(Expected: Duplicate Contact error)
+8. Open Developer Console → Debug → Open Execute Anonymous Window.
+6. Enter:
+Contact c = new Contact(
+    LastName = 'Test Contact',
+    Email = 'test@gmail.com',
+    Phone = '9876543210'
+);
+insert c;
+7. Execute......it cause an error message 
+
 
 ___________________________________________________________________________________________________________________________________
 
