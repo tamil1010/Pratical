@@ -362,6 +362,43 @@ Step 3: Test duplicate Phone
             phone : 9876543210
         Click Save.(Expected: Duplicate Contact error)
 
+___________________________________________________________________________________________________________________________________
+
+# 8
+
+1. Open Gear Icon → Developer Console.
+2. Click File → New → Apex Class.
+3. Enter Class Name: OverdueTaskBatch.
+
+global class OverdueTaskBatch implements Database.Batchable<SObject> {
+
+    global Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator([
+            SELECT Id, Status, ActivityDate
+            FROM Task
+            WHERE ActivityDate < TODAY
+            AND IsClosed = false
+        ]);
+    }
+
+    global void execute(Database.BatchableContext bc, List<Task> scope) {
+        for (Task t : scope) {
+            t.Status = 'Overdue';
+        }
+        update scope;
+    }
+
+    global void finish(Database.BatchableContext bc) {
+        System.debug('Overdue Tasks updated successfully');
+    }
+}
+4. Ctrl + S
+5. Click Debug → Open Execute Anonymous Window.
+6. Database.executeBatch(new OverdueTaskBatch(), 200);
+7. Click Execute.
+8. Go to Setup → Apex Jobs.
+9. Check that the batch job status is Completed.
+
 
 ___________________________________________________________________________________________________________________________________
 
@@ -451,84 +488,87 @@ ________________________________________________________________________________
 
 # 12
 
-Step 1: Create the Role & SalesManager User
-1. Create the "Sales Manager" Role (if not already present)
-        Go to Setup  in the Quick Find box, enter Roles.
-        Click Set Up Roles.
-        Under your company hierarchy, click Add Role.
-        Set Role Name and Label to Sales Manager.
-        Click Save.
-2. Create the "SalesManager" User
-        In Setup, enter Users in the Quick Find box and select Users.
-        Click New User.
-        Enter the following details:
-                First Name: Sales
-                Last Name: Manager
-                Alias: smanager
-                Email: Enter your valid email address (so you receive the summary email during testing).
-                Username: e.g., salesmanager.<your_unique_id>@exam.nm (must be unique).
-                User License: Salesforce
-                Profile: Standard User
-                Role: Sales Manager
-        Check Generate new password and notify user immediately.
-        Click Save.
-Step 2: Write the Batch and Schedulable Apex Class
+1. Go to Setup → Roles.
+2. Click Set Up Roles.
+3. Click Add Role under GCEE.
+4. Enter:
+           Label: Sales Manager
+           Role Name: Sales_Manager
+5. Click Save.
+6. Go to Setup → Users → New User.
+7. 
+Field	        Value
+First Name	    Sales
+Last Name	    Manager
+Alias	        smanager
+Email	        Your valid email
+Username	    A unique username
+User License	Salesforce
+Profile	        Standard User
+Active	        Checked
 
-Click the Developer Console -> File -> New -> Apex Class.
-Name the class : DailyOpportunitySummaryBatch.
+8. Open Gear → Developer Console → File → New → Apex Class.
+9. Class Name: DailyOpportunitySummaryBatch
 
-global class DailyOpportunitySummaryBatch implements Database.Batchable<sObject>, Database.Stateful, Schedulable {
-    global List<String> oppSummaryList = new List<String>();
+global class DailyOpportunitySummaryBatch
+implements Database.Batchable<SObject>, Database.Stateful, Schedulable {
+
+    global List<String> summaries = new List<String>();
+
     global Database.QueryLocator start(Database.BatchableContext bc) {
         return Database.getQueryLocator([
-            SELECT Id, Name, StageName, Amount, CloseDate, CreatedDate, Owner.Name 
-            FROM Opportunity 
+            SELECT Name, StageName, Amount, CloseDate, Owner.Name
+            FROM Opportunity
             WHERE CreatedDate = TODAY
         ]);
     }
+
     global void execute(Database.BatchableContext bc, List<Opportunity> scope) {
         for (Opportunity opp : scope) {
-            String recordSummary = 'Opportunity: ' + opp.Name + 
-                                   ' | Stage: ' + opp.StageName + 
-                                   ' | Amount: ' + (opp.Amount != null ? String.valueOf(opp.Amount) : '0') + 
-                                   ' | Owner: ' + opp.Owner.Name + 
-                                   ' | Close Date: ' + opp.CloseDate.format();
-            oppSummaryList.add(recordSummary);
+            summaries.add(
+                opp.Name + ' | ' + opp.StageName +
+                ' | Amount: ' + opp.Amount +
+                ' | Owner: ' + opp.Owner.Name
+            );
         }
     }
+
     global void finish(Database.BatchableContext bc) {
-        List<User> managers = [
-            SELECT Id, Email, Name 
-            FROM User 
-            WHERE UserRole.Name = 'Sales Manager' 
-            AND Profile.Name = 'Standard User' 
-            AND IsActive = true 
+        User manager = [
+            SELECT Name, Email
+            FROM User
+            WHERE UserRole.Name = 'Sales Manager'
+            AND IsActive = true
             LIMIT 1
         ];
-        if (!managers.isEmpty() && managers[0].Email != null) {
-            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-            mail.setToAddresses(new String[] { managers[0].Email });
-            mail.setSubject('Daily Opportunity Summary Report - ' + Date.today().format());
-            String emailBody = 'Hello ' + managers[0].Name + ',\n\n';
-            emailBody += 'Here is the summary of Opportunities created today (' + Date.today().format() + '):\n\n';
-            if (oppSummaryList.isEmpty()) {
-                emailBody += 'No opportunities were created today.\n';
-            } else {
-                emailBody += 'Total Created Today: ' + oppSummaryList.size() + '\n\n';
-                for (String detail : oppSummaryList) {
-                    emailBody += '• ' + detail + '\n';
-                }
-            }
-            emailBody += '\nRegards,\nSalesforce Automated Scheduler';
-            mail.setPlainTextBody(emailBody);
-            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+
+        Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+        mail.setToAddresses(new String[]{manager.Email});
+        mail.setSubject('Daily Opportunity Summary');
+
+        String body = 'Daily Opportunity Summary\n\n';
+
+        for (String s : summaries) {
+            body += s + '\n';
         }
+
+        if (summaries.isEmpty()) {
+            body += 'No opportunities created today.';
+        }
+
+        mail.setPlainTextBody(body);
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[]{mail});
     }
+
     global void execute(SchedulableContext sc) {
-        DailyOpportunitySummaryBatch batchJob = new DailyOpportunitySummaryBatch();
-        Database.executeBatch(batchJob, 200);
+        Database.executeBatch(new DailyOpportunitySummaryBatch(), 200);
     }
 }
+
+10. Ctrl + S
+11. Open Developer Console → Debug → Open Execute Anonymous Window.
+12. Database.executeBatch(new DailyOpportunitySummaryBatch(), 200);
+13. Click Execute.
 
 ___________________________________________________________________________________________________________________________________
 
