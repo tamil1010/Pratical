@@ -264,6 +264,74 @@ ________________________________________________________________________________
 
 #6
 
+1. Go to Setup → Flows.
+2. Click New Flow.
+3. Select Schedule-Triggered Flow.
+4. Click Create.
+5. Set the following:
+        Field	        Value
+        Object	        Lead
+        Start Date	Today
+        Start Time	12:00 AM
+        Frequency	Daily
+6. Set Entry Conditions:
+        Field	        Operator	        Value
+        Status	        Equals	                Open - Not Contacted
+7. Click the + icon below Start.
+8. Select Update Records.
+9. Enter the following:
+        Field	                Value
+        Label	                Update Stale Lead
+        How to Find Records	Specify conditions to identify records, and set fields individually
+        Object	                Lead
+10. Under Filter Lead Records, set:
+        Field	        Operator	Value
+        Lead ID	        Equals	        $Record → Lead ID
+11. Under Set Field Values for the Lead Records, add:
+        Field	        Value
+        Status	        Closed - Not Converted
+        Description	UpdatedDescription
+``` if updateddescription is not there 
+1. click the search + new resource
+2. Select Formula.
+3. Enter:
+        Field	        Value
+        API Name	UpdatedDescription
+        Data Type	Text
+4. Enter this formula:
+IF(
+    ISBLANK({!$Record.Description}),
+    "Automatically closed because the lead was not contacted for 30 days.",
+    {!$Record.Description} & BR() &
+    "Automatically closed because the lead was not contacted for 30 days."
+)
+5. Click Check Syntax.
+6. If valid, click Done.
+```
+
+1. Click the + below Update Stale Lead.
+2. Select Create Records.
+3. Configure:
+        Field	                        Value
+        Label	                        Create Follow-up Task
+        How to Set the Record Fields	Manually
+        Object	                        Task
+4. Under Set Field Values, add:
+        Task Field	Value
+        Subject	        Stale Lead auto-closed - review if needed
+        Assigned To ID	Triggering Lead → Owner ID
+        Name ID	        Triggering Lead → Lead ID
+        Status	        Not Started
+        Priority	Normal
+5. Click Done.
+
+1. Flow Label: Auto Close Stale Leads.
+2. Click Save.
+
+
+
+
+
 
 
 ___________________________________________________________________________________________________________________________________
