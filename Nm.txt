@@ -10,29 +10,37 @@ https://gcee7-dev-ed.develop.my.salesforce-setup.com/lightning/setup/SetupOneHom
 
 ##1
 
-1. Log in to Salesforce and click the Setup gear icon.
-2. In Quick Find, search for Flows. Open Flows and click New Flow.
-3. Select Record-Triggered Flow and click Create.
-4. Select Opportunity as the Object.
-5. Under Configure Trigger, select A record is updated.
-6. Under Entry Conditions,select all condition set Field = Stage, Operator = Equals, and Value = Closed Won.
-7. For When to Run the Flow for Updated Records, select Only when a record is updated to meet the condition requirements. This makes the Flow run only when Stage changes to Closed Won.
-8. Under Optimize the Flow For, select Actions and Related Records, then click Done.
-9. On the Flow canvas, click the plus (+) below Start and select Get Records.
-10. Set Label = Get Related Account and Object = Account.
-11. Set the Get Records condition: Field = Id, Operator = Equals, Value = $Record.AccountId.
-12. Choose Only the first record to be stored and click Done.
-13. Click the plus (+) after Get Records and select Decision.
-14. Set Label = Check Account Found. Create an outcome named Account Found.
-15. For the Account Found condition, select Get Related Account > Id, Operator = Is Null, Value = False. This checks that an Account was found.
-16. Connect the Account Found outcome to an Update Records element. Leave the Default Outcome connected to End so Opportunities without an Account are skipped.
-17. In Update Records, set Label = Update Account Type.
-18. Choose Specify conditions to identify records, and set fields individually. Select Object = Account.
-19. Set the condition: Field = Id, Operator = Equals, Value = Get Related Account > Id.
-20. Under Set Field Values, set Field = Type and Value = Customer - Direct. Click Done.
-21. Check the flow path: Start → Get Related Account → Check Account Found → (Account Found) Update Account Type → End. The Default Outcome should go directly to End.
-22. Click Save. Enter Flow Label = Update Account Type When Opportunity Is Won, then click Save.
-23. Click Activate to activate the Flow.
+1. Setup → Roles → Set Up Roles.
+2. Create these five roles:
+        Role        	    Reports To
+        Sales Director	    CEO
+        East Manager	    Sales Director
+        West Manager	    Sales Director
+        East Sales Rep	    Sales Director
+        West Sales Rep	    Sales Director
+
+1. Go to Setup → Sharing Settings.
+2. Click Edit under Organization-Wide Defaults.
+3. Find Opportunity.
+4. Set Default Internal Access = Private.
+5. Keep Grant Access Using Hierarchies enabled.
+6. Click Save.
+
+1. Go to Setup → Public Groups.
+2. Click New.
+3. Enter:
+        Label: Sales Support Team
+        Group Name: Sales_Support_Team
+4. Click Save.
+
+1. Go to Setup → Sharing Settings.
+2. Find Opportunity Sharing Rules.
+3. Click New.
+4. Enter:
+        Field	    Value
+        Label	    Sales Support Access
+        Rule Type	Based on record owner
+
 
 ___________________________________________________________________________________________________________________________________
 
@@ -286,6 +294,8 @@ ________________________________________________________________________________
 
 #6
 
+
+
 ___________________________________________________________________________________________________________________________________
 
 #7
@@ -388,6 +398,20 @@ global class OverdueTaskBatch implements Database.Batchable<SObject> {
 7. Click Execute.
 8. Go to Setup → Apex Jobs.
 9. Check that the batch job status is Completed.
+
+___________________________________________________________________________________________________________________________________
+
+# 9
+
+1. Go to Setup.
+2. Search for Flows.
+3. Click New Flow.
+4. Select Screen Flow.
+5. Click the + icon on the Flow canvas.
+6. Select Screen.
+7. Label: Case Information.
+8. In the left side components -> lookup
+9. wfojiuhgyfhjiwoifuhjidofhfjiofhjfh
 
 
 ___________________________________________________________________________________________________________________________________
