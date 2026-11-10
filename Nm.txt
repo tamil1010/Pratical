@@ -500,9 +500,167 @@ ________________________________________________________________________________
 4. Select Screen Flow.
 5. Click the + icon on the Flow canvas.
 6. Select Screen.
-7. Label: Case Information.
-8. In the left side components -> lookup
-9. wfojiuhgyfhjiwoifuhjidofhfjiofhjfh
+7.         
+        Field	        Value
+        Label	        Case Details
+        API Name	Case_Details
+8. In the left-side Search components box, type Lookup.
+9. Drag the Lookup component into the middle screen.
+10. On the right-side panel, fill:
+        Field	                Value
+        Label	                Select Account
+        API Name	        AccountLookup
+        Object API Name	        Account
+        Field API Name	        Name
+        Maximum Selections	1
+        Required	        True
+11. Search for Text.
+12. Drag the Text component below Account Lookup.
+13. Configure:
+        Field	        Value
+        Label	        Case Subject
+        API Name	SubjectInput
+        Required	Checked
+14. Add Case Description
+15. Search for Long Text Area.
+16. Drag it below Case Subject.
+17. Configure:
+        Field	        Value
+        Label	        Case Description
+        API Name	DescriptionInput
+        Required	Checked
+18. Add Case Origin
+19. Search for Picklist.
+20. Drag the Picklist component below Description.
+21. Configure:
+        Field	        Value
+        Label	        Case Origin
+        API Name	OriginInput
+        Required	Checked
+22. For Choice, create a new resource:
+        Resource Type: Picklist Choice Set
+        API Name: CaseOriginChoices
+        Object: Case
+        Data Type : Picklist
+        Field : Origin
+23. Click Done.
+24. Click + below the first Screen.
+25. Select Screen.
+26. Label: Customer Impact.
+27. API Name: Customer_Impact.
+28. Search for Radio Buttons in Components.
+29. Drag it into the screen.
+30. Configure:
+        Property	Value
+        Label	        Select Customer Impact
+        API Name	ImpactInput
+        Required	True
+31. Click Done.
+32. Open the Manager tab.
+33. Click New Resource.
+34. Enter:
+        Field	        Value
+        Resource Type	Formula
+        API Name	PriorityFormula
+        Data Type	Text
+
+35. Enter this formula:
+CASE(
+    {!ImpactInput},
+    "Entire Organization", "High",
+    "Team", "Medium",
+    "Single User", "Low",
+    "Medium"
+)
+36. Click Done.
+37. Click + below the Formula's position in the flow.
+38. Select Screen.
+39. Label: Review Case Details.
+40. API Name: Review_Case_Details.
+41. Search for Display Text and drag it into the screen.
+42. API : ReviewDetailsText
+43. Enter:
+                PLEASE REVIEW YOUR CASE DETAILS
+                
+                Subject: {!SubjectInput}
+                
+                Description: {!DescriptionInput}
+                
+                Case Origin: {!OriginInput}
+                
+                Customer Impact: {!ImpactInput}
+                
+                Priority: {!PriorityFormula}
+                
+                Please click Next to create your Case.
+46. Click Done.
+47. Click + below the Review Screen.
+48. Select Create Records.
+49. Enter:
+        Field	                        Value
+        Label	                        Create New Case
+        API Name	                Create_New_Case
+        How Many Records	        One
+        How to Set Field Values	        Manually
+        Object	                        Case
+50. Add these field mappings:
+        Case Field	        Value
+        AccountId	        AccountLookup → recordId
+        Subject	                SubjectInput
+        Description	        DescriptionInput
+        Case Origin	        OriginInput
+        Priority	        PriorityFormula
+51. Click + below Create New Case.
+52. Select Get Records.
+53.         
+        Field	                Value
+        Label	                Get Created Case
+        API Name	        Get_Created_Case
+        Object	                Case
+        Condition Field	        Case Id
+        Operator	        Equals
+        Value	                + New Resource
+( Field	        Value
+Resource Type	Variable
+API Name	varCreatedCaseId
+Data Type	Text
+Default Value	Leave blank )
+54. Select:
+        Only the first record.
+        Automatically store all fields.
+55. Click Done.
+56. Click + below Get Records.
+57. Select Screen.
+58. Label: Case Success.
+59. Drag Display Text into the screen.
+60. API Name : SuccessMessage
+61. Enter:
+                CASE CREATED SUCCESSFULLY!
+                
+                Your Case has been created successfully.
+                
+                Case Number: {!Get_Created_Case.CaseNumber}
+                
+                Thank you!
+62. Click Done.
+63. Add another Screen.
+64. Label: Case Creation Error.
+65. Drag Display Text into it.
+66. API Name : ErrorMessage
+67. Enter:
+                CASE CREATION FAILED!
+                
+                Sorry, we could not create your Case.
+                
+                Please try again or contact your administrator.
+68. Click Done.
+69. Click Save.
+70. Enter:
+        Field	        Value
+        Flow Label	Guided Case Logging
+71. Click Save.
+72. Click Activate.
+
 
 
 ___________________________________________________________________________________________________________________________________
