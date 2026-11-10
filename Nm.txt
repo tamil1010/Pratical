@@ -277,62 +277,115 @@ ________________________________________________________________________________
 6. Set Entry Conditions:
         Field	        Operator	        Value
         Status	        Equals	                Open - Not Contacted
-7. Click the + icon below Start.
-8. Select Update Records.
+
+7. Open the Manager tab on the left.
+8. Click New Resource.
 9. Enter the following:
-        Field	                Value
-        Label	                Update Stale Lead
-        How to Find Records	Specify conditions to identify records, and set fields individually
-        Object	                Lead
-10. Under Filter Lead Records, set:
-        Field	        Operator	Value
-        Lead ID	        Equals	        $Record → Lead ID
-11. Under Set Field Values for the Lead Records, add:
         Field	        Value
-        Status	        Closed - Not Converted
-        Description	UpdatedDescription
-``` if updateddescription is not there 
-1. click the search + new resource
-2. Select Formula.
+        Resource Type	Variable
+        API Name	DaysLimit
+        Description	Number of days before a Lead is considered stale
+        Data Type	Number
+        Decimal Places	0
+        Default Value	30
+
+10. Open Manager.
+11. Click New Resource.
+12. Enter:
+        Field	        Value
+        Resource Type	Formula
+        API Name	CutoffDateTime
+        Data Type	Date/Time
+13. In the Formula Editor, enter:
+        $Flow.CurrentDateTime - {!DaysLimit}
+14. Click Check Syntax, if available.
+15. Click Done.
+
+16. Click the + below Start.
+17. Select Decision.
+18. Configure:
+        Field	        Value
+        Label	        Check Stale Lead
+        API Name	Check_Stale_Lead
+19. Under Outcome Details:
+        Field	                Value
+        Outcome Label	        Stale Lead
+        Outcome API Name	Stale_Lead
+20. Under Condition Requirements, select All Conditions Are Met (AND).
+21. Set the condition:
+        Field	        Value
+        Resource	$Record.CreatedDate
+        Operator	Less Than
+        Value	        {!CutoffDateTime}
+22. Click Done.
+
+23. Click the + below the Stale Lead outcome.
+24. Select Update Records.
+25. Configure:
+        Field	        Value
+        Label	        Update Stale Lead
+        API Name	Update_Stale_Lead
+26. Under How to Find Records to Update and Set Their Values, select:
+       Specify conditions to identify records, and set fields individually.
+27. Configure:
+        Object: Lead
+        Condition Requirements: All Conditions Are Met (AND)
+28. Condition:
+        Field	        Operator	Value
+        Lead Id	        Equals	        $Record. Lead Id
+29. Under Set Field Values for the Lead Records:
+        
+        First field:
+                Field	Value
+                Status	Closed - Not Converted
+        
+        Second field:
+                Field	        Value
+                Description	UpdatedDescription
+
+if updateddecrption is not there
+1. Click search  field inside value.
+2. Click + New Resource.
 3. Enter:
         Field	        Value
+        Resource Type	Formula
         API Name	UpdatedDescription
         Data Type	Text
 4. Enter this formula:
 IF(
     ISBLANK({!$Record.Description}),
-    "Automatically closed because the lead was not contacted for 30 days.",
-    {!$Record.Description} & BR() &
-    "Automatically closed because the lead was not contacted for 30 days."
+    "Automatically closed because the Lead was not contacted for 30 days.",
+    {!$Record.Description} & " " &
+    "Automatically closed because the Lead was not contacted for 30 days."
 )
-5. Click Check Syntax.
-6. If valid, click Done.
-```
-
-1. Click the + below Update Stale Lead.
-2. Select Create Records.
-3. Configure:
-        Field	                        Value
-        Label	                        Create Follow-up Task
-        How to Set the Record Fields	Manually
-        Object	                        Task
-4. Under Set Field Values, add:
-        Task Field	Value
-        Subject	        Stale Lead auto-closed - review if needed
-        Assigned To ID	Triggering Lead → Owner ID
-        Name ID	        Triggering Lead → Lead ID
-        Status	        Not Started
-        Priority	Normal
 5. Click Done.
-
-1. Flow Label: Auto Close Stale Leads.
-2. Click Save.
-
+6. Return to Update Records.
+7. Select UpdatedDescription as the Description value.
 
 
-
-
-
+30. Click the + below Update Stale Lead.
+31. Select Create Records.
+32. Configure:
+        Field	                        Value
+        Label	                        Create Stale Lead Task
+        API Name	                Create_Stale_Lead_Task
+        How Many Records to Create	One
+        How to Set Record Field Values	Manually
+33. Object: Task
+34. Now add these field values:
+        Task Field	                Value
+        Subject	                        Stale Lead auto-closed – review if needed
+        Assigned To ID (OwnerId)	$Record.OwnerId
+        Name ID (WhoId)	                $Record.LeadId
+        Status	                        Not Started
+        Priority	                Normal
+        Description                	Lead automatically closed after 30 days without contact
+35. Click Save at the top-right.
+36. Enter:
+        Flow Label: Automatically Close Stale Leads
+        Flow API Name: Automatically_Close_Stale_Leads
+37. Click Save.
+38. Click Activate.
 
 ___________________________________________________________________________________________________________________________________
 
